@@ -8,7 +8,6 @@ const Anthropic = require('@anthropic-ai/sdk');
 const { fal } = require('@fal-ai/client');
 const { google } = require('googleapis');
 const { Dropbox } = require('dropbox');
-const Stripe = require('stripe');
 const { v4: uuidv4 } = require('uuid');
 const app = express();
 app.use(express.json({ limit: '10mb' }));
@@ -17,7 +16,6 @@ app.use(express.json({ limit: '10mb' }));
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 fal.config({ credentials: process.env.FAL_KEY });
 const dbx = new Dropbox({ accessToken: process.env.DROPBOX_TOKEN });
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 // ═══════════════════════════════════════════
 // SYSTEM PROMPT DI CLAUDE
 // ═══════════════════════════════════════════
