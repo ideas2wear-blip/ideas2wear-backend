@@ -1,194 +1,128 @@
 // ═══════════════════════════════════════════
-// SETUP — importa le librerie
+// SETUP — IDEAS2WEAR CORE (Stripe rimosso)
 // ═══════════════════════════════════════════
 require('dotenv').config();
 const express = require('express');
 const axios = require('axios');
 const Anthropic = require('@anthropic-ai/sdk');
 const { fal } = require('@fal-ai/client');
-const { google } = require('googleapis');
 const { Dropbox } = require('dropbox');
 const { v4: uuidv4 } = require('uuid');
+const cors = require('cors');
+
 const app = express();
 app.use(express.json({ limit: '10mb' }));
- 
-// Inizializza i client
+app.use(cors());
+
+// Inizializzazione Client
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 fal.config({ credentials: process.env.FAL_KEY });
 const dbx = new Dropbox({ accessToken: process.env.DROPBOX_TOKEN });
+
 // ═══════════════════════════════════════════
-// SYSTEM PROMPT DI CLAUDE
+// CONFIGURAZIONE SYSTEM PROMPT (Sezione 5.3 report)
 // ═══════════════════════════════════════════
 const SYSTEM_PROMPT = `
-Sei l'assistente di ideas2wear.eu, un servizio di magliette personalizzate.
-Guidi l'utente nella creazione del design e nell'ordine.
- 
-REGOLA FONDAMENTALE: rispondi SEMPRE e SOLO con un oggetto JSON valido.
-Nessun testo prima o dopo il JSON.
- 
-SCELTA DEL MODELLO AI:
-- Usa "nano_banana_2" per: illustrazioni, cartoon, soggetti,
-  animali, scene, paesaggi, stili artistici, fotorealismo
-- Usa "ideogram" per: qualsiasi design che include TESTO, scritte,
-  slogan, numeri, citazioni, tipografia, loghi con parole
-- Usa "recraft" per: loghi SENZA testo, icone, simboli,
-  design vettoriali, quando l'utente vuole file scalabile
-- Usa "none" se non serve generare immagini
- 
-OTTIMIZZAZIONE PROMPT (SEMPRE in inglese, mai in italiano):
-- Aggiungi sempre: white or transparent background
-- Aggiungi sempre: suitable for t-shirt printing
-- Specifica lo stile: cartoon style, vector illustration, graphic design
-- Descrivi colori vivaci: bold colors, high contrast
-- Per Ideogram con testo: includi il testo ESATTO tra virgolette
- 
-FORMATO RISPOSTA JSON OBBLIGATORIO:
-{
-  "message": "risposta in italiano per l'utente",
-  "model": "nano_banana_2 | ideogram | recraft | none",
-  "prompt": "prompt ottimizzato in inglese",
-  "want_svg": false,
-  "history": [array aggiornato della conversazione]
-}
-`;
+Sei l'assistente di ideas2wear.eu. Rispondi SEMPRE in JSON.
+LOGICA MODELLI:
+- 'nano_banana_2': arte, foto, stili complessi.
+- 'ideogram': TESTO, slogan, citazioni.
+- 'recraft': loghi vettoriali, icone.
+
+PROMPT: Sempre in inglese, fondo bianco/trasparente, adatto alla stampa su t-shirt.
+FORMATO: {"message": "...", "model": "...", "prompt": "...", "want_svg": false}`;
+
 // ═══════════════════════════════════════════
-// ENDPOINT PRINCIPALE — chiamato da Landbot
+// ENDPOINT CHAT — Generazione e Limite 3 Tentativi
 // ═══════════════════════════════════════════
 app.post('/api/chat', async (req, res) => {
   try {
-    const { session_id, user_input, history_json, image_url } = req.body;
-// Ricostruisce la history della conversazione
+    const { user_input, history_json, tentativi_fatti = 0 } = req.body;
+    const LIMITE = 3;
+
+    // 1. Controllo Limite
+    if (parseInt(tentativi_fatti) >= LIMITE) {
+      return res.status(403).json({
+        claude_message: "Limite di 3 creazioni raggiunto! Scegli il tuo design preferito o procedi all'ordine.",
+        nuovo_conteggio: tentativi_fatti
+      });
+    }
+
     let history = [];
     try { history = JSON.parse(history_json || '[]'); } catch(e) {}
- 
-    // Aggiunge il messaggio dell'utente alla history
-    const userContent = [];
-    userContent.push({ type: 'text', text: user_input });
-    if (image_url) {
-      userContent.push({ type: 'text',
-        text: 'L\'utente ha caricato questa immagine: ' + image_url });
-    }
-    history.push({ role: 'user', content: userContent });
- 
-    // Chiama Claude
+    history.push({ role: 'user', content: user_input });
+
+    // 2. Claude decide il modello
     const claudeRes = await anthropic.messages.create({
-      model: 'claude-haiku-4-5',
+      model: 'claude-3-5-sonnet-20241022',
       max_tokens: 1024,
       system: SYSTEM_PROMPT,
-      messages: history
+      messages: history.filter(m => m.role !== 'system'),
     });
- 
-    // Estrae il JSON dalla risposta di Claude
-    let parsed;
-    try {
-      const text = claudeRes.content[0].text;
-      const match = text.match(/\{[\s\S]*\}/);
-      parsed = JSON.parse(match[0]);
-    } catch(e) {
-      return res.json({
-        claude_message: 'Scusa, riprova!',
-        design_url: '', mockup_url: '', history_json: history_json
-      });
-    }
- 
-    // Aggiorna la history con la risposta di Claude
-    history.push({ role: 'assistant', content: JSON.stringify(parsed) });
- 
+
+    const parsed = JSON.parse(claudeRes.content[0].text);
+    
+    // 3. Generazione Immagine su fal.ai
     let designUrl = '';
-    let mockupUrl = '';
- 
-    // Genera l'immagine con il modello scelto da Claude
-    if (parsed.model && parsed.model !== 'none' && parsed.prompt) {
-      designUrl = await generateImage(parsed.model, parsed.prompt,
-                                      parsed.want_svg, image_url);
+    if (parsed.model !== 'none') {
+      const endpoint = {
+        'nano_banana_2': 'fal-ai/nano-banana-2',
+        'ideogram': 'fal-ai/ideogram/v3',
+        'recraft': parsed.want_svg ? 'fal-ai/recraft/v4/text-to-vector' : 'fal-ai/recraft/v4'
+      }[parsed.model];
+
+      const falRes = await fal.subscribe(endpoint, {
+        input: { prompt: parsed.prompt, image_size: 'square_hd' }
+      });
+      designUrl = falRes.data.images[0].url;
     }
- 
-    // Crea il mockup se c'e' un'immagine
+
+    // 4. Upload su Dropbox (Link Permanente)
+    let finalUrl = designUrl;
     if (designUrl) {
-      mockupUrl = await createMockup(designUrl);
+      const imgRes = await axios.get(designUrl, { responseType: 'arraybuffer' });
+      const path = `/disegni/design_${uuidv4()}.png`;
+      await dbx.filesUpload({ path, contents: imgRes.data });
+      const linkRes = await dbx.sharingCreateSharedLinkWithSettings({ path });
+      finalUrl = linkRes.result.url.replace('www.dropbox.com', 'dl.dropboxusercontent.com').replace('?dl=0', '');
     }
- 
-    // Risponde a Landbot
+
+    history.push({ role: 'assistant', content: JSON.stringify(parsed) });
+
     res.json({
       claude_message: parsed.message,
-      design_url: designUrl,
-      mockup_url: mockupUrl || designUrl,
-      history_json: JSON.stringify(history)
+      design_url: finalUrl,
+      history_json: JSON.stringify(history),
+      nuovo_conteggio: parseInt(tentativi_fatti) + 1
     });
-} catch (error) {
-    console.error('Errore:', error.message);
-    res.status(500).json({
-      claude_message: 'Errore tecnico. Riprova tra poco!',
-      design_url: '', mockup_url: ''
-    });
+
+  } catch (error) {
+    console.error("Errore Chat:", error);
+    res.status(500).json({ error: "Errore tecnico" });
   }
 });
+
 // ═══════════════════════════════════════════
-// FUNZIONE GENERAZIONE IMMAGINE (fal.ai)
+// ENDPOINT ORDINE — Google Sheets (via Make)
 // ═══════════════════════════════════════════
-async function generateImage(model, prompt, wantSvg, existingImageUrl) {
+app.post('/api/create-order', async (req, res) => {
   try {
-    let result;
- 
-    if (model === 'nano_banana_2') {
-      // Genera con Nano Banana 2
-      const input = {
-        prompt: prompt,
-        image_size: 'square_hd',  // 1024x1024
-        num_images: 1
-      };
-      // Se c'e' un'immagine esistente da modificare, la passa
-      if (existingImageUrl) {
-        input.image_url = existingImageUrl;
-      }
-      result = await fal.subscribe('fal-ai/nano-banana-2', { input });
-      return result.data.images[0].url;
-    }
- 
-    if (model === 'ideogram') {
-      // Genera con Ideogram 3 (ottimo per testo)
-      result = await fal.subscribe('fal-ai/ideogram/v3', {
-        input: {
-          prompt: prompt,
-          aspect_ratio: '1:1',
-          style_type: 'design',
-          rendering_speed: 'QUALITY'
-        }
+    const orderData = req.body;
+    
+    // Invio al Webhook di Make che scriverà su Google Sheets
+    if (process.env.MAKE_ORDER_WEBHOOK) {
+      await axios.post(process.env.MAKE_ORDER_WEBHOOK, {
+        ...orderData,
+        metodo_pagamento: "IN NEGOZIO",
+        data: new Date().toISOString()
       });
-      return result.data.images[0].url;
     }
- 
-    if (model === 'recraft') {
-      // Genera con Recraft V4 (SVG o raster)
-      const endpoint = wantSvg
-        ? 'fal-ai/recraft/v4/text-to-vector'
-        : 'fal-ai/recraft/v4';
-      result = await fal.subscribe(endpoint, {
-        input: {
-          prompt: prompt,
-          image_size: 'square_hd',
-          style: wantSvg ? 'vector_illustration' : 'digital_illustration'
-        }
-      });
-      return result.data.images[0].url;
-    }
- 
-    return '';
-  } catch(e) {
-    console.error('Errore generazione:', e.message);
-    return '';
+
+    res.json({ success: true, message: "Ordine registrato!" });
+  } catch (error) {
+    res.status(500).json({ error: "Errore ordine" });
   }
-}
- 
-// ═══════════════════════════════════════════
-// FUNZIONE MOCKUP (opzionale)
-// ═══════════════════════════════════════════
-async function createMockup(designUrl) {
-  // Se non hai un servizio mockup, restituisce il design direttamente
-  // Quando hai Dynamic Mockups, sostituisci questo codice
-  return designUrl;
-}
- 
-app.listen(process.env.PORT || 3000, () => {
-  console.log('Server ideas2wear avviato!');
 });
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Ideas2wear attivo su porta ${PORT}`));
