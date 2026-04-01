@@ -11,7 +11,7 @@
   "dependencies": {
     "express": "^4.18.0",
     "@anthropic-ai/sdk": "^0.20.0",
-    "@fal-ai/client": "latest",
+    "@fal-ai/serverless-client": "latest",
     "dotenv": "^16.3.0"
   }
 }
