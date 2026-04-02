@@ -152,18 +152,18 @@ async function generateImage(model, prompt, existingImageUrl) {
 
     // IDEOGRAM
     if (model === 'ideogram') {
-      const result = await fal.subscribe('fal-ai/ideogram/v3', {
-        input: {
-          prompt,
-          aspect_ratio: '1:1',
-          style_type: 'design',
-          rendering_speed: 'QUALITY',
-          num_images: 1
-        }
-      });
+  console.log("⚠️ Ideogram non disponibile, uso fallback");
 
-      return result?.data?.images?.[0]?.url || '';
+  const result = await fal.subscribe('fal-ai/nano-banana-2', {
+    input: {
+      prompt,
+      image_size: 'square_hd',
+      num_images: 1
     }
+  });
+
+  return result?.data?.images?.[0]?.url || '';
+}
 
     // RECRAFT SVG
     if (model === 'recraft_svg') {
