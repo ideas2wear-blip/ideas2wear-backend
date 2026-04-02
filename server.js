@@ -66,6 +66,7 @@ app.post('/api/chat', async (req, res) => {
       const text = claudeResponse.content[0].text;
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       parsed = JSON.parse(jsonMatch[0]);
+      console.log("RISPOSTA CLAUDE:", parsed);
     } catch {
       return res.json({
         claude_message: 'Errore nella risposta AI. Riprova.',
