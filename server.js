@@ -95,7 +95,7 @@ app.post('/api/chat', async (req, res) => {
     const { user_input, history_json, image_url } = req.body;
 
     console.log('=== NUOVA RICHIESTA ===');
-    console.log('user_input:', user_input);
+    console.log('prompt_finale':', prompt_finale);
     console.log('image_url:', image_url || '(nessuna)');
 
     // Ricostruisce la history
