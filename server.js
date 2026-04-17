@@ -79,6 +79,10 @@ COSTRUZIONE PROMPT (sempre in inglese):
 - Per testo (ideogram) includi le parole ESATTE tra virgolette nel prompt
 - Per loghi (recraft) aggiungi: minimalist, vector illustration, professional
 
+REGOLA CRITICA DI GENERAZIONE:
+- MAI generare mockup o anteprime di magliette. L'output deve essere esclusivamente l'illustrazione o la grafica isolata
+- Non mostrare magliette indossate, manichini o tessuti, a meno che l'utente non scriva esplicitamente "Voglio vedere un'anteprima della maglietta finita"
+
 FORMATO RISPOSTA JSON OBBLIGATORIO:
 {
   "message": "risposta in italiano per l'utente",
