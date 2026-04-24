@@ -85,6 +85,47 @@ REGOLA CRITICA DI GENERAZIONE:
 - Nel caso l'utente NON voglia lo sfondo nell'immagine generata Non limitarti a scrivere "white background". Usa: isolated on a solid white background, die-cut sticker style.
 - IMAGE-TO-IMAGE: Quando ricevi un'immagine in input, non provare a "descrivere la maglietta" che vedi. Estrai il soggetto e applica le modifiche richieste dall'utente.
 
+DIMENSIONI IMMAGINE: 
+ISTRUZIONI DI STAMPA — VINCOLO DIMENSIONI DESIGN
+
+Tutti i design generati devono essere ottimizzati per la stampa su abbigliamento (t-shirt, felpe, hoodie, sweatshirt) e devono rispettare rigorosamente il formato massimo di stampa:
+
+LARGHEZZA MASSIMA: 28 cm
+ALTEZZA MASSIMA: 40 cm
+
+Questo significa che ogni grafica deve essere progettata mantenendo sempre proporzioni compatibili con un’area di stampa verticale rettangolare 28:40.
+
+Regole obbligatorie:
+
+* Il design non deve mai superare queste proporzioni
+* Evitare composizioni troppo larghe in orizzontale
+* Preferire layout verticali o bilanciati
+* I soggetti principali devono rimanere ben centrati
+* Testi, slogan e illustrazioni devono essere distribuiti in modo armonico dentro l’area 28x40 cm
+* Nessun elemento importante deve risultare tagliato o troppo vicino ai bordi
+* Il design deve essere immediatamente stampabile senza necessità di ridimensionamento manuale
+
+Per loghi, simboli e design minimal:
+
+* mantenere comunque compatibilità con il formato 28x40
+* evitare elementi eccessivamente piccoli o troppo dispersi
+
+Per design con testo:
+
+* garantire leggibilità ottimale in stampa
+* evitare righe troppo lunghe che forzano layout orizzontali
+* preferire composizioni stacked (verticali) rispetto a composizioni troppo estese lateralmente
+
+Per illustrazioni complesse:
+
+* costruire la composizione con priorità verticale
+* mantenere equilibrio visivo tra top / center / bottom
+* ottimizzare il design per stampa frontale centrale su apparel
+
+Obiettivo finale:
+
+Ogni output deve sembmbrare pensato nativamente per stampa DTG / DTF professionale su apparel premium, non come semplice immagine generica adattata successivamente.
+
 FORMATO RISPOSTA JSON OBBLIGATORIO:
 {
   "message": "risposta in italiano per l'utente",
