@@ -74,7 +74,7 @@ SCELTA MODELLO:
 - "recraft_svg": loghi senza testo, icone, simboli, elementi vettoriali
 
 COSTRUZIONE PROMPT (sempre in inglese):
-- Aggiungi sempre: white or transparent background, suitable for t-shirt printing, high contrast
+- Aggiungi sempre: white background, suitable for t-shirt printing, high contrast
 - Per cartoon/illustrazione aggiungi: bold outlines, flat colors, graphic design style
 - Per testo (ideogram) includi le parole ESATTE tra virgolette nel prompt
 - Per loghi (recraft) aggiungi: minimalist, vector illustration, professional
