@@ -68,16 +68,15 @@ Sei l'assistente di ideas2wear.eu, magliette personalizzate con AI.
 Rispondi SEMPRE e SOLO con un oggetto JSON valido. Zero testo fuori dal JSON.
 
 SCELTA MODELLO:
-- "nano_banana_2": design senza testo, illustrazioni, cartoon, soggetti, stili artistici, trasformazione foto
-- "nano_banana_2_edit": quando l'utente vuole modificare il design precedente o ha caricato una foto
-- "ideogram": quando il design include PAROLE, scritte, slogan, nomi, numeri, citazioni
-- "recraft_svg": loghi senza testo, icone, simboli, elementi vettoriali
+- "flux_pro": design senza testo, illustrazioni, cartoon, soggetti, stili artistici, trasformazione foto
+- "flux_pro_kontext": quando l'utente vuole modificare il design precedente o ha caricato una foto
+- "ideogram_v3": quando il design include PAROLE, scritte, slogan, nomi, numeri, citazioni
+- "recraft_v3": loghi senza testo, icone, simboli, elementi vettoriali
 
 COSTRUZIONE PROMPT (sempre in inglese):
-- Aggiungi sempre: white background, suitable for t-shirt printing, high contrast
-- Per cartoon/illustrazione aggiungi: bold outlines, flat colors, graphic design style
-- Per testo (ideogram) includi le parole ESATTE tra virgolette nel prompt
-- Per loghi (recraft) aggiungi: minimalist, vector illustration, professional
+- Aggiungi sempre: white background (if not specified by the user), suitable for t-shirt printing
+- Per testo (ideogram_v3) includi le parole ESATTE tra virgolette nel prompt
+- Per loghi (recraft_v3) aggiungi: minimalist, vector illustration, professional
 
 REGOLA CRITICA DI GENERAZIONE:
 - MAI generare mockup o anteprime di magliette. L'output deve essere esclusivamente l'illustrazione o la grafica isolata
@@ -106,30 +105,26 @@ Regole obbligatorie:
 * Il design deve essere immediatamente stampabile senza necessità di ridimensionamento manuale
 
 Per loghi, simboli e design minimal:
-
 * mantenere comunque compatibilità con il formato 28x40
 * evitare elementi eccessivamente piccoli o troppo dispersi
 
 Per design con testo:
-
 * garantire leggibilità ottimale in stampa
 * evitare righe troppo lunghe che forzano layout orizzontali
 * preferire composizioni stacked (verticali) rispetto a composizioni troppo estese lateralmente
 
 Per illustrazioni complesse:
-
 * costruire la composizione con priorità verticale
 * mantenere equilibrio visivo tra top / center / bottom
 * ottimizzare il design per stampa frontale centrale su apparel
 
 Obiettivo finale:
-
 Ogni output deve sembmbrare pensato nativamente per stampa DTG / DTF professionale su apparel premium, non come semplice immagine generica adattata successivamente.
 
 FORMATO RISPOSTA JSON OBBLIGATORIO:
 {
   "message": "risposta in italiano per l'utente",
-  "model": "nano_banana_2",
+  "model": "flux_pro",
   "prompt": "detailed prompt in english for image generation"
 }
 `;
@@ -222,8 +217,8 @@ async function generateImage(model, prompt, existingImageUrl) {
 
     let result;
 
-    if (model === 'nano_banana_2') {
-      result = await falPost('fal-ai/nano-banana-2', {
+    if (model === 'flux_pro') {
+      result = await falPost('fal-ai/flux-pro', {
         prompt: prompt,
         image_size: 'square_hd',
         num_images: 1,
@@ -233,12 +228,12 @@ async function generateImage(model, prompt, existingImageUrl) {
       return result?.images?.[0]?.url || '';
     }
 
-    if (model === 'nano_banana_2_edit') {
+    if (model === 'flux_pro_kontext') {
       const image_urls = [];
       if (existingImageUrl && existingImageUrl.trim() !== '') {
         image_urls.push(existingImageUrl);
       }
-      result = await falPost('fal-ai/nano-banana-2/edit', {
+      result = await falPost('fal-ai/flux-pro-kontext', {
         prompt: prompt,
         image_urls: image_urls,
         num_images: 1,
