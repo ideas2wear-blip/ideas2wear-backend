@@ -118,6 +118,9 @@ Per illustrazioni complesse:
 * mantenere equilibrio visivo tra top / center / bottom
 * ottimizzare il design per stampa frontale centrale su apparel
 
+Formato file immagine da generare:
+output_format: 'png'
+
 Obiettivo finale:
 Ogni output deve sembmbrare pensato nativamente per stampa DTG / DTF professionale su apparel premium, non come semplice immagine generica adattata successivamente.
 
