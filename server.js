@@ -277,6 +277,53 @@ async function generateImage(model, prompt, existingImageUrl) {
     return '';
   }
 }
+// ═══════════════════════════════════════════════════
+// ENDPOINT MOCKUP
+// Riceve il link del design e lo applica sul capo
+// Usa nano-banana-2/edit già presente nel server
+// ═══════════════════════════════════════════════════
+app.post('/api/mockup', async (req, res) => {
+  try {
+    const { design_url, tipo_prodotto, lato } = req.body;
+ 
+    console.log('=== MOCKUP RICHIESTO ===');
+    console.log('Prodotto:', tipo_prodotto, '| Lato:', lato);
+    console.log('Design URL:', design_url);
+ 
+    // Descrizione del capo in inglese per il modello
+    const capo = tipo_prodotto === 'felpa'
+      ? 'white hoodie with hood, flat lay'
+      : 'white t-shirt, flat lay';
+ 
+    const posizione = lato === 'retro'
+      ? 'on the back, centered'
+      : 'on the front, centered';
+ 
+    const mockupPrompt =
+      'Take this graphic design and place it printed ' + posizione + ' of a plain ' + capo + '. ' +
+      'White background, product mockup photography, e-commerce style. ' +
+      'No model, no mannequin. Design clearly visible and properly scaled for apparel printing.';
+ 
+    console.log('Mockup prompt:', mockupPrompt);
+ 
+    // Chiama nano-banana-2/edit con il design come immagine di input
+    const result = await falPost('fal-ai/nano-banana-2/edit', {
+      prompt: mockupPrompt,
+      image_urls: [design_url],
+      num_images: 1,
+      resolution: '1K'
+    });
+ 
+    const mockupUrl = result?.images?.[0]?.url || '';
+    console.log('Mockup URL:', mockupUrl);
+ 
+    res.json({ mockup_url: mockupUrl });
+ 
+  } catch (error) {
+    console.error('ERRORE MOCKUP:', error.message);
+    res.status(500).json({ mockup_url: '' });
+  }
+});
 
 // ═══════════════════════════════════════════════════
 // PARTE 6 — Endpoint di test (apri nel browser)
