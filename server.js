@@ -277,6 +277,7 @@ async function generateImage(model, prompt, existingImageUrl) {
     return '';
   }
 }
+
 // ═══════════════════════════════════════════════════
 // ENDPOINT MOCKUP
 // Riceve il link del design e lo applica sul capo
@@ -284,16 +285,16 @@ async function generateImage(model, prompt, existingImageUrl) {
 // ═══════════════════════════════════════════════════
 app.post('/api/mockup', async (req, res) => {
   try {
-    const { design_url, tipo_prodotto, lato } = req.body;
+    const { design_url, tipo_prodotto, lato, colore_felpa } = req.body;
  
     console.log('=== MOCKUP RICHIESTO ===');
     console.log('Prodotto:', tipo_prodotto, '| Lato:', lato);
     console.log('Design URL:', design_url);
  
     // Descrizione del capo in inglese per il modello
-    const capo = tipo_prodotto === 'felpa'
-      ? 'white hoodie with hood, flat lay'
-      : 'white t-shirt, flat lay';
+const capo = tipo_prodotto === 'felpa'
+  ? (colore_felpa || 'black') + ' hoodie with hood, flat lay'
+  : 'white t-shirt, flat lay';
  
     const posizione = lato === 'retro'
       ? 'on the back, centered'
