@@ -68,7 +68,7 @@ Sei l'assistente di ideas2wear.eu, magliette personalizzate con AI.
 Rispondi SEMPRE e SOLO con un oggetto JSON valido. Zero testo fuori dal JSON.
 
 SCELTA MODELLO:
-- "nano_banana_2": design senza testo, illustrazioni, cartoon, soggetti, stili artistici, trasformazione foto
+- "flux_pro": design senza testo, illustrazioni, cartoon, soggetti, stili artistici, fotorealistico
 - "nano_banana_2_edit": quando l'utente vuole modificare il design precedente o ha caricato una foto
 - "ideogram": quando il design include PAROLE, scritte, slogan, nomi, numeri, citazioni
 - "recraft_svg": loghi senza testo, icone, simboli, elementi vettoriali
@@ -85,7 +85,7 @@ REGOLA CRITICA DI GENERAZIONE:
 - Nel caso l'utente NON voglia lo sfondo nell'immagine generata Non limitarti a scrivere "white background". Usa: isolated on a solid white background, die-cut sticker style.
 - IMAGE-TO-IMAGE: Quando ricevi un'immagine in input, non provare a "descrivere la maglietta" che vedi. Estrai il soggetto e applica le modifiche richieste dall'utente.
 
-DIMENSIONI IMMAGINE: 
+DIMENSIONI IMMAGINE:
 ISTRUZIONI DI STAMPA — VINCOLO DIMENSIONI DESIGN
 
 Tutti i design generati devono essere ottimizzati per la stampa su abbigliamento (t-shirt, felpe, hoodie, sweatshirt) e devono rispettare rigorosamente il formato massimo di stampa:
@@ -93,7 +93,7 @@ Tutti i design generati devono essere ottimizzati per la stampa su abbigliamento
 LARGHEZZA MASSIMA: 28 cm
 ALTEZZA MASSIMA: 40 cm
 
-Questo significa che ogni grafica deve essere progettata mantenendo sempre proporzioni compatibili con un’area di stampa verticale rettangolare 28:40.
+Questo significa che ogni grafica deve essere progettata mantenendo sempre proporzioni compatibili con un'area di stampa verticale rettangolare 28:40.
 
 Regole obbligatorie:
 
@@ -101,7 +101,7 @@ Regole obbligatorie:
 * Evitare composizioni troppo larghe in orizzontale
 * Preferire layout verticali o bilanciati
 * I soggetti principali devono rimanere ben centrati
-* Testi, slogan e illustrazioni devono essere distribuiti in modo armonico dentro l’area 28x40 cm
+* Testi, slogan e illustrazioni devono essere distribuiti in modo armonico dentro l'area 28x40 cm
 * Nessun elemento importante deve risultare tagliato o troppo vicino ai bordi
 * Il design deve essere immediatamente stampabile senza necessità di ridimensionamento manuale
 
@@ -124,12 +124,12 @@ Per illustrazioni complesse:
 
 Obiettivo finale:
 
-Ogni output deve sembmbrare pensato nativamente per stampa DTG / DTF professionale su apparel premium, non come semplice immagine generica adattata successivamente.
+Ogni output deve sembrare pensato nativamente per stampa DTG / DTF professionale su apparel premium, non come semplice immagine generica adattata successivamente.
 
 FORMATO RISPOSTA JSON OBBLIGATORIO:
 {
   "message": "risposta in italiano per l'utente",
-  "model": "nano_banana_2",
+  "model": "flux_pro",
   "prompt": "detailed prompt in english for image generation"
 }
 `;
@@ -152,7 +152,7 @@ app.post('/api/chat', async (req, res) => {
     // Costruisce il messaggio utente
     let userText = user_input || '';
     if (image_url && image_url.trim() !== '') {
-      userText += ' [Immagine caricata dall\'utente: ' + image_url + ']';
+      userText += ' [Design precedente generato da modificare: ' + image_url + ']';
     }
     history.push({ role: 'user', content: userText });
 
@@ -181,6 +181,13 @@ app.post('/api/chat', async (req, res) => {
         design_url: '',
         history_json: JSON.stringify(history)
       });
+    }
+
+    // Se arriva un'immagine di riferimento, forza sempre il modello edit.
+    // Non ci si fida che Claude scelga correttamente ogni volta.
+    if (image_url && image_url.trim() !== '' && parsed.model === 'flux_pro') {
+      parsed.model = 'nano_banana_2_edit';
+      console.log('Modello forzato a nano_banana_2_edit (image_url presente)');
     }
 
     // Genera l'immagine
@@ -222,14 +229,14 @@ async function generateImage(model, prompt, existingImageUrl) {
 
     let result;
 
-    if (model === 'nano_banana_2') {
-      result = await falPost('fal-ai/nano-banana-2', {
+    if (model === 'flux_pro') {
+      result = await falPost('black-forest-labs/flux-pro', {
         prompt: prompt,
-        image_size: 'square_hd',
+        aspect_ratio: '1:1',
         num_images: 1,
         output_format: 'png'
       });
-      console.log('NB2 risposta:', JSON.stringify(result).slice(0, 300));
+      console.log('FLUX Pro risposta:', JSON.stringify(result).slice(0, 300));
       return result?.images?.[0]?.url || '';
     }
 
@@ -297,20 +304,22 @@ app.post('/api/mockup', async (req, res) => {
       return res.status(400).json({ mockup_url: '', errore: 'design_url mancante o non valido' });
     }
 
-   // DOPO
-const tipoNorm = (tipo_prodotto || '').toLowerCase();
-const capo = tipoNorm === 'felpa'
-  ? (colore_felpa || 'black') + ' hoodie with hood, flat lay'
-  : 'white t-shirt, flat lay';
+    // Normalizza tipo_prodotto in minuscolo per gestire "T-Shirt", "Felpa", ecc.
+    const tipoNorm = (tipo_prodotto || '').toLowerCase();
+    const capo = tipoNorm === 'felpa'
+      ? (colore_felpa || 'black') + ' hoodie with hood, flat lay'
+      : 'white t-shirt, flat lay';
 
-const posizione = (lato || '').toLowerCase().includes('retro')
-  ? 'on the back, centered'
-  : 'on the front, centered';
+    const posizione = (lato || '').toLowerCase().includes('retro')
+      ? 'on the back, centered'
+      : 'on the front, centered';
 
     const mockupPrompt =
-      'Take this graphic design and place it printed ' + posizione + ' of a plain ' + capo + '. ' +
-      'White background, product mockup photography, e-commerce style. ' +
-      'No model, no mannequin. Design clearly visible and properly scaled for apparel printing.';
+      'Take this exact graphic design and apply it as a flat print ' + posizione + ' of a plain ' + capo + '. ' +
+      'The design must be perfectly centered on the garment, not too large and not too small, respecting natural print proportions. ' +
+      'Pure white background, clean e-commerce product mockup, flat lay style. ' +
+      'No model, no mannequin, no shadows, no props. ' +
+      'The graphic must remain faithful to the original design provided.';
 
     console.log('Mockup prompt:', mockupPrompt);
 
