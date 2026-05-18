@@ -245,15 +245,18 @@ async function generateImage(model, prompt, existingImageUrl) {
       if (existingImageUrl && existingImageUrl.trim() !== '') {
         image_urls.push(existingImageUrl);
       }
-      result = await falPost('fal-ai/nano-banana-2/edit', {
-        prompt: prompt,
-        image_urls: image_urls,
-        num_images: 1,
-        resolution: '1K'
-      });
-      console.log('NB2 edit risposta:', JSON.stringify(result).slice(0, 300));
-      return result?.images?.[0]?.url || '';
-    }
+      result = await falPost('fal-ai/flux-2-pro', {
+Il resto del blocco rimane identico:
+javascriptif (model === 'flux_pro') {
+  result = await falPost('fal-ai/flux-2-pro', {
+    prompt: prompt,
+    aspect_ratio: '1:1',
+    num_images: 1,
+    output_format: 'png'
+  });
+  console.log('FLUX Pro risposta:', JSON.stringify(result).slice(0, 300));
+  return result?.images?.[0]?.url || '';
+}
 
     if (model === 'ideogram') {
       result = await falPost('fal-ai/ideogram/v3', {
