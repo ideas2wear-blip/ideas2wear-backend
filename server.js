@@ -15,7 +15,6 @@ const anthropic = new Anthropic({
 
 // ═══════════════════════════════════════════════════
 // PARTE 2 — Funzione HTTP generica per chiamare fal.ai
-// Nessun pacchetto npm necessario — usa Node built-in
 // ═══════════════════════════════════════════════════
 function falPost(endpoint, body) {
   return new Promise((resolve, reject) => {
@@ -61,81 +60,82 @@ function falPost(endpoint, body) {
 }
 
 // ═══════════════════════════════════════════════════
-// PARTE 3 — System Prompt completo per Claude
+// PARTE 3 — System Prompt
 // ═══════════════════════════════════════════════════
 const SYSTEM_PROMPT = `
 Sei l'assistente di ideas2wear.eu, magliette personalizzate con AI.
 Rispondi SEMPRE e SOLO con un oggetto JSON valido. Zero testo fuori dal JSON.
 
-SCELTA MODELLO:
-- "flux_pro": design senza testo, illustrazioni, cartoon, soggetti, stili artistici, fotorealistico
-- "nano_banana_2_edit": quando l'utente vuole modificare il design precedente o ha caricato una foto
-- "ideogram": quando il design include PAROLE, scritte, slogan, nomi, numeri, citazioni
-- "recraft_svg": loghi senza testo, icone, simboli, elementi vettoriali
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCELTA MODELLO
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- "flux_pro": illustrazioni, cartoon, soggetti, stili artistici, fotorealistico, loghi iconici, simboli, elementi grafici senza testo
+- "nano_banana_2_edit": SOLO quando nel messaggio è presente il tag [Design precedente generato da modificare: URL] oppure [Immagine caricata: URL]. In TUTTI gli altri casi usa flux_pro.
+- "ideogram": quando il design include PAROLE, scritte, slogan, nomi, numeri, citazioni, testo visibile nel design
 
-COSTRUZIONE PROMPT (sempre in inglese):
-- Aggiungi sempre: white background, suitable for t-shirt printing, high contrast
-- Per cartoon/illustrazione aggiungi: bold outlines, flat colors, graphic design style
-- Per testo (ideogram) includi le parole ESATTE tra virgolette nel prompt
-- Per loghi (recraft) aggiungi: minimalist, vector illustration, professional
+recraft_svg NON è più disponibile. Per loghi e icone usa flux_pro.
 
-REGOLA CRITICA DI GENERAZIONE:
-- MAI generare mockup o anteprime di magliette. L'output deve essere esclusivamente l'illustrazione o la grafica isolata
-- MAI generare immagini di magliette indossate, manichini o tessuti, a meno che l'utente non scriva una frase tipo "crea una immagine di una maglietta con l'immagine di"
-- Nel caso l'utente NON voglia lo sfondo nell'immagine generata Non limitarti a scrivere "white background". Usa: isolated on a solid white background, die-cut sticker style.
-- IMAGE-TO-IMAGE: Quando ricevi un'immagine in input, non provare a "descrivere la maglietta" che vedi. Estrai il soggetto e applica le modifiche richieste dall'utente.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+QUALITÀ DEL PROMPT — REGOLA FONDAMENTALE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Il prompt deve essere LUNGO e RICCO DI DETTAGLI (minimo 80 parole in inglese).
+Prompt corti = immagini mediocri. Prompt dettagliati = immagini professionali.
 
-DIMENSIONI IMMAGINE:
-ISTRUZIONI DI STAMPA — VINCOLO DIMENSIONI DESIGN
+Includi SEMPRE questi elementi nel prompt:
+1. SOGGETTO DETTAGLIATO: descrivi forma, postura, espressione, dettagli fisici
+2. STILE ARTISTICO PRECISO: non "cartoon" generico, ma "bold graphic novel style", "1960s vintage poster illustration", "Studio Ghibli aesthetic", "Japanese ukiyo-e woodblock print", "Art Nouveau decorative style", "80s neon synthwave art", ecc.
+3. TECNICA E TEXTURE: "crisp ink outlines", "flat vector shapes with gradient fills", "rough screen-print texture", "clean digital illustration", "watercolor wash with ink outlines"
+4. PALETTE COLORE SPECIFICA: non "colori vivaci" ma "deep cobalt blue, burnt orange, cream white, black outlines"
+5. COMPOSIZIONE: "centered subject with ample negative space", "dynamic diagonal composition", "full-bleed illustration", "symmetrical badge design"
+6. QUALITÀ TECNICA: aggiungi sempre "ultra-detailed, masterful illustration, professional graphic design, award-winning artwork, crisp clean lines"
 
-Tutti i design generati devono essere ottimizzati per la stampa su abbigliamento (t-shirt, felpe, hoodie, sweatshirt) e devono rispettare rigorosamente il formato massimo di stampa:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ENHANCER PER MODELLO — aggiungili SEMPRE in fondo al prompt
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Per flux_pro: "ultra-detailed masterpiece, intricate linework, vibrant rich colors, professional t-shirt graphic, premium print quality, isolated on solid white background"
+Per nano_banana_2_edit: "seamlessly integrated edit, maintain original style and color palette, high quality, print-ready"
+Per ideogram: "perfect typography, professional kerning, crisp clean design, bold graphic style, print-ready"
 
-LARGHEZZA MASSIMA: 28 cm
-ALTEZZA MASSIMA: 40 cm
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STILI ARTISTICI DI RIFERIMENTO — usali quando pertinenti
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- Cartoon/Animazione: "bold cartoon style", "thick black outlines, flat cel-shaded colors", "exaggerated proportions, expressive faces"
+- Vintage: "retro 1950s Americana poster", "faded letterpress texture", "limited 3-color palette"
+- Realistico: "hyper-realistic detailed illustration, photographic quality, dramatic lighting"
+- Minimal: "ultra-minimalist single-line art", "geometric flat design, perfect negative space"
+- Manga/Anime: "detailed manga ink style, dynamic action lines, dramatic shading"
+- Natura: "detailed naturalistic botanical illustration, fine crosshatching, scientific illustration style"
+- Streetwear: "bold graffiti-inspired graphic, spray paint texture, urban street art aesthetic"
+- Logo/Badge: "clean vector badge design, symmetrical emblem, professional brand identity style"
 
-Questo significa che ogni grafica deve essere progettata mantenendo sempre proporzioni compatibili con un'area di stampa verticale rettangolare 28:40.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+REGOLE CRITICHE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- MAI generare mockup o anteprime di magliette indossate
+- MAI chiedere all'utente di caricare un'immagine nel messaggio JSON
+- Per sfondo bianco usa SEMPRE: "isolated on solid white background, die-cut sticker style, no drop shadow"
+- IMAGE-TO-IMAGE: estrai il soggetto dall'immagine e applica le modifiche richieste. Non descrivere la maglietta.
+- Per testo in ideogram: includi le parole ESATTE tra virgolette nel prompt
 
-Regole obbligatorie:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+VINCOLO DIMENSIONI STAMPA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Area massima: 28 cm larghezza × 40 cm altezza.
+Preferire composizioni verticali o quadrate. Soggetto principale centrato.
+Nessun elemento importante vicino ai bordi. Layout ottimizzato per stampa DTG/DTF.
 
-* Il design non deve mai superare queste proporzioni
-* Evitare composizioni troppo larghe in orizzontale
-* Preferire layout verticali o bilanciati
-* I soggetti principali devono rimanere ben centrati
-* Testi, slogan e illustrazioni devono essere distribuiti in modo armonico dentro l'area 28x40 cm
-* Nessun elemento importante deve risultare tagliato o troppo vicino ai bordi
-* Il design deve essere immediatamente stampabile senza necessità di ridimensionamento manuale
-
-Per loghi, simboli e design minimal:
-
-* mantenere comunque compatibilità con il formato 28x40
-* evitare elementi eccessivamente piccoli o troppo dispersi
-
-Per design con testo:
-
-* garantire leggibilità ottimale in stampa
-* evitare righe troppo lunghe che forzano layout orizzontali
-* preferire composizioni stacked (verticali) rispetto a composizioni troppo estese lateralmente
-
-Per illustrazioni complesse:
-
-* costruire la composizione con priorità verticale
-* mantenere equilibrio visivo tra top / center / bottom
-* ottimizzare il design per stampa frontale centrale su apparel
-
-Obiettivo finale:
-
-Ogni output deve sembrare pensato nativamente per stampa DTG / DTF professionale su apparel premium, non come semplice immagine generica adattata successivamente.
-
-FORMATO RISPOSTA JSON OBBLIGATORIO:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FORMATO RISPOSTA JSON OBBLIGATORIO
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 {
-  "message": "risposta in italiano per l'utente",
+  "message": "risposta in italiano per l'utente (entusiasta, max 2 righe)",
   "model": "flux_pro",
-  "prompt": "detailed prompt in english for image generation"
+  "prompt": "prompt dettagliato in inglese, minimo 80 parole"
 }
 `;
 
 // ═══════════════════════════════════════════════════
-// PARTE 4 — Endpoint principale chiamato da Landbot
+// PARTE 4 — Endpoint principale /api/chat
 // ═══════════════════════════════════════════════════
 app.post('/api/chat', async (req, res) => {
   try {
@@ -159,7 +159,7 @@ app.post('/api/chat', async (req, res) => {
     // Chiama Claude
     const claudeResponse = await anthropic.messages.create({
       model: 'claude-haiku-4-5',
-      max_tokens: 1024,
+      max_tokens: 1500,
       system: SYSTEM_PROMPT,
       messages: history
     });
@@ -183,11 +183,16 @@ app.post('/api/chat', async (req, res) => {
       });
     }
 
-    // Se arriva un'immagine di riferimento, forza sempre il modello edit.
-    // Non ci si fida che Claude scelga correttamente ogni volta.
+    // Corregge il modello in base alla presenza di image_url
     if (image_url && image_url.trim() !== '' && parsed.model === 'flux_pro') {
+      // Ha immagine ma Claude ha scelto flux_pro → forza edit
       parsed.model = 'nano_banana_2_edit';
       console.log('Modello forzato a nano_banana_2_edit (image_url presente)');
+    }
+    if ((!image_url || image_url.trim() === '') && parsed.model === 'nano_banana_2_edit') {
+      // Nessuna immagine ma Claude ha scelto edit → torna a flux_pro
+      parsed.model = 'flux_pro';
+      console.log('Modello corretto a flux_pro (nano_banana_2_edit senza image_url)');
     }
 
     // Genera l'immagine
@@ -221,7 +226,7 @@ app.post('/api/chat', async (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════
-// PARTE 5 — Funzione generazione immagine via HTTP
+// PARTE 5 — Funzione generazione immagine
 // ═══════════════════════════════════════════════════
 async function generateImage(model, prompt, existingImageUrl) {
   try {
@@ -229,6 +234,7 @@ async function generateImage(model, prompt, existingImageUrl) {
 
     let result;
 
+    // ── FLUX 2 Pro — modello principale ──────────────
     if (model === 'flux_pro') {
       result = await falPost('fal-ai/flux-2-pro', {
         prompt: prompt,
@@ -240,21 +246,51 @@ async function generateImage(model, prompt, existingImageUrl) {
       return result?.images?.[0]?.url || '';
     }
 
+    // ── Nano Banana 2 Edit — image-to-image ──────────
     if (model === 'nano_banana_2_edit') {
       const image_urls = [];
       if (existingImageUrl && existingImageUrl.trim() !== '') {
         image_urls.push(existingImageUrl);
       }
-      result = await falPost('fal-ai/nano-banana-2/edit', {
-        prompt: prompt,
-        image_urls: image_urls,
-        num_images: 1,
-        resolution: '1K'
-      });
-      console.log('NB2 edit risposta:', JSON.stringify(result).slice(0, 300));
-      return result?.images?.[0]?.url || '';
+
+      // Nessuna immagine → fallback silenzioso a flux_pro
+      if (image_urls.length === 0) {
+        console.warn('nano_banana_2_edit senza image_url — fallback a flux_pro');
+        result = await falPost('fal-ai/flux-2-pro', {
+          prompt: prompt,
+          aspect_ratio: '1:1',
+          num_images: 1,
+          output_format: 'png'
+        });
+        console.log('FLUX Pro fallback:', JSON.stringify(result).slice(0, 300));
+        return result?.images?.[0]?.url || '';
+      }
+
+      // Prova nano_banana_2_edit, se fallisce (URL scaduto) → fallback flux_pro
+      try {
+        result = await falPost('fal-ai/nano-banana-2/edit', {
+          prompt: prompt,
+          image_urls: image_urls,
+          num_images: 1,
+          resolution: '1K'
+        });
+        console.log('NB2 edit risposta:', JSON.stringify(result).slice(0, 300));
+        return result?.images?.[0]?.url || '';
+      } catch (editError) {
+        console.warn('nano_banana_2_edit fallito (URL probabilmente scaduto):', editError.message);
+        console.warn('Fallback a flux_pro con stesso prompt');
+        result = await falPost('fal-ai/flux-2-pro', {
+          prompt: prompt,
+          aspect_ratio: '1:1',
+          num_images: 1,
+          output_format: 'png'
+        });
+        console.log('FLUX Pro fallback dopo edit error:', JSON.stringify(result).slice(0, 300));
+        return result?.images?.[0]?.url || '';
+      }
     }
 
+    // ── Ideogram V3 — design con testo ───────────────
     if (model === 'ideogram') {
       result = await falPost('fal-ai/ideogram/v3', {
         prompt: prompt,
@@ -266,13 +302,15 @@ async function generateImage(model, prompt, existingImageUrl) {
       return result?.images?.[0]?.url || '';
     }
 
-    if (model === 'recraft_svg') {
-      result = await falPost('fal-ai/recraft/v4/text-to-vector', {
+    // ── Recraft V3 raster — loghi/icone (PNG, non SVG) ─
+    // Sostituisce recraft_svg che generava SVG non visualizzabili in Landbot
+    if (model === 'recraft_v3') {
+      result = await falPost('fal-ai/recraft/v3/text-to-image', {
         prompt: prompt,
         image_size: 'square_hd',
         style: 'vector_illustration'
       });
-      console.log('Recraft risposta:', JSON.stringify(result).slice(0, 300));
+      console.log('Recraft V3 risposta:', JSON.stringify(result).slice(0, 300));
       return result?.images?.[0]?.url || '';
     }
 
@@ -287,8 +325,6 @@ async function generateImage(model, prompt, existingImageUrl) {
 
 // ═══════════════════════════════════════════════════
 // ENDPOINT MOCKUP
-// Riceve il link del design e lo applica sul capo
-// Usa nano-banana-2/edit già presente nel server
 // ═══════════════════════════════════════════════════
 app.post('/api/mockup', async (req, res) => {
   try {
@@ -298,13 +334,11 @@ app.post('/api/mockup', async (req, res) => {
     console.log('Prodotto:', tipo_prodotto, '| Lato:', lato);
     console.log('Design URL:', design_url);
 
-    // Validazione: blocca subito se design_url non è valido
     if (!design_url || !design_url.startsWith('http')) {
       console.error('design_url mancante o non valido:', design_url);
       return res.status(400).json({ mockup_url: '', errore: 'design_url mancante o non valido' });
     }
 
-    // Normalizza tipo_prodotto in minuscolo per gestire "T-Shirt", "Felpa", ecc.
     const tipoNorm = (tipo_prodotto || '').toLowerCase();
     const capo = tipoNorm === 'felpa'
       ? (colore_felpa || 'black') + ' hoodie with hood, flat lay'
@@ -342,8 +376,7 @@ app.post('/api/mockup', async (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════
-// PARTE 6 — Endpoint di test (apri nel browser)
-// https://[tuo-url].railway.app/test
+// PARTE 6 — Endpoint di test
 // ═══════════════════════════════════════════════════
 app.get('/test', (req, res) => {
   res.json({
